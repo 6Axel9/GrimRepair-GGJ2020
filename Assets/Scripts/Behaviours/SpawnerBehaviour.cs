@@ -9,6 +9,8 @@ public class SpawnerBehaviour : MonoBehaviour
 {
     [SerializeField]
     private List<SpawnableResource> m_spawnables;
+    [SerializeField]
+    private float m_ceilingHeight;
 
     // Start is called before the first frame update
     private void Start()
@@ -23,7 +25,7 @@ public class SpawnerBehaviour : MonoBehaviour
         }
     }
     
-    public void Respawn(InteractableType resourceType)
+    public void Respawn(CollectableType resourceType)
     {
         SpawnableResource spawnable = m_spawnables.Find(a => a.Interactable.Type == resourceType);
         int currentAmount = spawnable.Locations.FindAll(a => a.childCount != 0).Count;
@@ -31,7 +33,7 @@ public class SpawnerBehaviour : MonoBehaviour
         RandomSpawn(spawnable, currentAmount, currentAmount + 1);
     }
 
-    public Transform FindClosest(InteractableType resourceType, Vector3 position)
+    public Transform FindClosest(CollectableType resourceType, Vector3 position)
     {
         SpawnableResource spawnable = m_spawnables.Find(a => a.Interactable.Type == resourceType);
         return spawnable.Locations.FindAll(a => a.childCount != 0).OrderBy(x => Vector2.Distance(position, x.transform.position)).First();
@@ -43,7 +45,18 @@ public class SpawnerBehaviour : MonoBehaviour
         {
             List<Transform> empty = resource.Locations.FindAll(a => a.childCount == 0);
             Transform location = empty.ElementAt(Random.Range(0, empty.Count));
-            Instantiate(resource.Interactable, location);
+            CollectableBehaviour collectable = Instantiate(resource.Interactable, location);
+
+            switch (collectable.Type)
+            {
+                case CollectableType.Red:
+                    collectable.SetVisibility(collectable.transform.position.y > m_ceilingHeight ? 0.25f : 1f);
+                    break;
+                case CollectableType.Blue:
+                    collectable.SetVisibility(collectable.transform.position.y > m_ceilingHeight ? 1f : 0.25f);
+                    break;
+            }
+
             current++;
         }
     }
@@ -55,8 +68,8 @@ public class SpawnableResource
     [SerializeField]
     private string name;
     [SerializeField]
-    private InteractableBehaviour m_interactable;
-    public InteractableBehaviour Interactable => m_interactable;
+    private CollectableBehaviour m_interactable;
+    public CollectableBehaviour Interactable => m_interactable;
 
     [SerializeField]
     private List<Transform> m_locations;

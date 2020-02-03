@@ -1,6 +1,9 @@
 {
   "dependencies": {
+    "com.unity.2d.sprite": "1.0.0",
     "com.unity.cinemachine": "2.5.0",
+    "com.unity.ext.nunit": "1.0.0",
+    "com.unity.package-manager-ui": "2.2.0",
     "com.unity.postprocessing": "2.2.2",
     "com.unity.test-framework": "1.1.11",
     "com.unity.textmeshpro": "2.0.1",

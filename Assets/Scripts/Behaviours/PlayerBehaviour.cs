@@ -3,122 +3,104 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using System.Linq;
+using System;
+using TMPro;
+
+public enum PlayerType { Auto, Manual }
 
 public class PlayerBehaviour : MonoBehaviour
 {
-    private enum StatusFlags
-    {
-        BottomFloor = 00000000,
-        TopFloor    = 00000001,
-        OnLedge     = 00000010,
-    }
-
     [SerializeField]
     private SpawnerBehaviour m_spawner;
     [SerializeField]
     private NavMeshAgent m_agent;
+    public NavMeshAgent Agent => m_agent;
     [SerializeField]
-    private Rigidbody m_rigidbody;
+    private PlayerMapping m_mapping;
+    public PlayerMapping Mapping => m_mapping;
+
     [SerializeField]
-    [Range(100f, 1000f)]
-    private float m_moveSpeed = 500f;
-
-    private List<InteractableBehaviour> m_surroundings;
-    private StatusFlags m_status;
-
-    private void Start()
+    private TMP_Text m_scoreText;
+    private float m_score;
+    public float Score
     {
-        m_surroundings = new List<InteractableBehaviour>();
+        get => m_score;
+        set
+        {
+            m_score = value;
+            m_scoreText.text = m_score.ToString();
+        }
     }
 
     private void Update()
     {
-        if (Input.anyKey)
-            m_rigidbody.AddForce(Vector3.right * Input.GetAxis("Horizontal") * m_moveSpeed * Time.deltaTime);
-
-        if (m_surroundings.Count == 0)
+        if (!m_agent.enabled)
             return;
 
-        if (Input.GetKeyDown(KeyCode.E))
+        if (m_mapping.Controls == PlayerType.Auto)
         {
-            InteractableBehaviour target = m_surroundings.OrderBy(x => Vector2.Distance(this.transform.position, x.transform.position)).First();
-            Interact(target.Type);
+            if (!m_agent.hasPath)
+                m_agent.SetDestination(m_spawner.FindClosest(m_mapping.Collectable, transform.position).position);
+        }
+        else if(m_mapping.Controls == PlayerType.Manual)
+        {
+            if (!Input.anyKey)
+                return;
+
+            Vector3 direction = Vector3.zero;
+
+            if (Input.GetKey(m_mapping.Left))
+                direction.x--;
+            if (Input.GetKey(m_mapping.Right))
+                direction.x++;
+            if (Input.GetKey(m_mapping.Up))
+                direction.z++;
+            if (Input.GetKey(m_mapping.Down))
+                direction.z--;
+
+            m_agent.Move(direction * m_mapping.Step * Time.deltaTime);
+            transform.forward = Vector3.SlerpUnclamped(transform.forward, direction, 10f * Time.deltaTime);
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-       InteractableBehaviour interactable =  other.GetComponent<InteractableBehaviour>();
-        if (interactable == null)
+       CollectableBehaviour collectable =  other.GetComponent<CollectableBehaviour>();
+        if (collectable == null || collectable.Type != m_mapping.Collectable)
             return;
 
-        if(interactable.Type == InteractableType.Collectable)
-        {
-            Destroy(interactable.gameObject);
-            m_spawner.Respawn(interactable.Type);
-            Debug.Log("Collected");
-            return;
-        }
-
-        if (!m_surroundings.Contains(interactable))
-            m_surroundings.Add(interactable);
+        m_spawner.Respawn(collectable.Type);
+        Destroy(collectable.gameObject);
+        Score = m_score + 1;
     }
+}
 
-    private void OnTriggerExit(Collider other)
-    {
-        InteractableBehaviour interactable = other.GetComponent<InteractableBehaviour>();
-        if (interactable == null || interactable.Type == InteractableType.Collectable)
-            return;
-
-        if (m_surroundings.Contains(interactable))
-            m_surroundings.Remove(interactable);
-    }
-
-    private void Interact(InteractableType interactableType)
-    {
-        switch (interactableType)
-        {
-            case InteractableType.Ledge:
-                LedgeAction();
-                break;
-            case InteractableType.Stairs:
-                StairsAction();
-                break;
-            case InteractableType.Trigger:
-                Debug.Log("Triggered");
-                break;
-        }
-    }
-
-    private void LedgeAction()
-    {
-        if (!m_status.HasFlag(StatusFlags.OnLedge))
-        {
-            m_status |= StatusFlags.OnLedge;
-            Debug.Log("Jumped");
-        }
-        else
-        {
-            m_status &= ~StatusFlags.OnLedge;
-            Debug.Log("Dropped");
-        }
-    }
-
-    private void StairsAction()
-    {
-        if (m_status.HasFlag(StatusFlags.OnLedge))
-            return;
-
-        if (!m_status.HasFlag(StatusFlags.TopFloor))
-        {
-            m_status |= StatusFlags.TopFloor;
-            Debug.Log("Upstairs");
-        }
-        else
-        {
-            m_status &= ~StatusFlags.TopFloor;
-            Debug.Log("Downstairs");
-        }
-    }
-
+[Serializable]
+public class PlayerMapping
+{
+    [SerializeField]
+    private Sprite m_winnerIco;
+    public Sprite WinnerIco => m_winnerIco;
+    [SerializeField]
+    private CollectableType m_collectable;
+    public CollectableType Collectable => m_collectable;
+    [SerializeField]
+    private PlayerType m_controls;
+    public PlayerType Controls { get => m_controls; set => m_controls = value; }
+    [SerializeField]
+    private KeyCode m_left;
+    public KeyCode Left => m_left;
+    [SerializeField]
+    private KeyCode m_right;
+    public KeyCode Right => m_right;
+    [SerializeField]
+    private KeyCode m_up;
+    public KeyCode Up => m_up;
+    [SerializeField]
+    private KeyCode m_down;
+    public KeyCode Down => m_down;
+    [SerializeField]
+    [Range(1f, 100f)]
+    private float m_step = 10;
+    public float Step => m_step;
 }
