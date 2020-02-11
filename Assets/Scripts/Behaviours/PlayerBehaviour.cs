@@ -16,6 +16,8 @@ public class PlayerBehaviour : MonoBehaviour
     private NavMeshAgent m_agent;
     public NavMeshAgent Agent => m_agent;
     [SerializeField]
+    private GameObject m_wrapper;
+    [SerializeField]
     private PlayerMapping m_mapping;
     public PlayerMapping Mapping => m_mapping;
 
@@ -32,6 +34,11 @@ public class PlayerBehaviour : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        m_wrapper.LeanMoveLocalY(0.1f, 0.5f).setLoopPingPong().setEaseInOutSine();
+    }
+
     private void Update()
     {
         if (!m_agent.enabled)
@@ -41,11 +48,19 @@ public class PlayerBehaviour : MonoBehaviour
         {
             if (!m_agent.hasPath)
                 m_agent.SetDestination(m_spawner.FindClosest(m_mapping.Collectable, transform.position).position);
+            if (m_agent.velocity.sqrMagnitude > 0.1f)
+                m_wrapper.transform.localEulerAngles = Vector3.LerpUnclamped(m_wrapper.transform.localEulerAngles, new Vector3(30f,0f,0f), Time.deltaTime * 10f);
+            else
+                m_wrapper.transform.localEulerAngles = Vector3.LerpUnclamped(m_wrapper.transform.localEulerAngles, new Vector3(0f, 0f, 0f), Time.deltaTime * 10f);
+
         }
         else if(m_mapping.Controls == PlayerType.Manual)
         {
             if (!Input.anyKey)
+            {
+                m_wrapper.transform.localEulerAngles = Vector3.LerpUnclamped(m_wrapper.transform.localEulerAngles, new Vector3(0f, 0f, 0f), Time.deltaTime * 10f);
                 return;
+            }
 
             Vector3 direction = Vector3.zero;
 
@@ -60,6 +75,11 @@ public class PlayerBehaviour : MonoBehaviour
 
             m_agent.Move(direction * m_mapping.Step * Time.deltaTime);
             transform.forward = Vector3.SlerpUnclamped(transform.forward, direction, 10f * Time.deltaTime);
+            if (direction.sqrMagnitude > 0.1f)
+                m_wrapper.transform.localEulerAngles = Vector3.LerpUnclamped(m_wrapper.transform.localEulerAngles, new Vector3(30f, 0f, 0f), Time.deltaTime * 10f);
+            else
+                m_wrapper.transform.localEulerAngles = Vector3.LerpUnclamped(m_wrapper.transform.localEulerAngles, new Vector3(0f, 0f, 0f), Time.deltaTime * 10f);
+                
         }
     }
 

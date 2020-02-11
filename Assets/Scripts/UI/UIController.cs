@@ -11,8 +11,6 @@ public class UIController : MonoBehaviour
     [SerializeField]
     private GameObject m_menu;
     [SerializeField]
-    private GameObject m_pause;
-    [SerializeField]
     private GameObject m_game;
     [SerializeField]
     private GameObject m_rules;
@@ -27,13 +25,13 @@ public class UIController : MonoBehaviour
     [SerializeField]
     private PlayerBehaviour m_secondPlayer;
     [SerializeField]
-    TMP_Text m_counterText;
+    private TMP_Text m_winnerScoreText;
     [SerializeField]
-    TMP_Text m_timerText;
+    private TMP_Text m_counterText;
     [SerializeField]
-    Image m_winner;
+    private TMP_Text m_timerText;
     [SerializeField]
-    TMP_Text m_winnerScoreText;
+    private Image m_winner;
 
     [SerializeField]
     private float m_gameTime = 60f;
@@ -57,7 +55,7 @@ public class UIController : MonoBehaviour
             return;
 
         m_elapsedTime += Time.deltaTime;
-        m_timerText.text = ((int)m_elapsedTime).ToString();
+        m_timerText.text = ((int)(m_gameTime - m_elapsedTime)).ToString();
 
         if (m_elapsedTime > m_gameTime)
         {
@@ -86,10 +84,10 @@ public class UIController : MonoBehaviour
     public void VersusMode()
     {
         m_cameraUp.gameObject.SetActive(true);
-        m_cameraUp.rect = new Rect(0f, 0f, 1f, 0.5f);
+        m_cameraUp.rect = new Rect(0f, 0.5f, 1f, 0.5f);
 
         m_cameraDown.gameObject.SetActive(true);
-        m_cameraDown.rect = new Rect(0f, 0.5f, 1f, 0.5f);
+        m_cameraDown.rect = new Rect(0f, 0.0f, 1f, 0.5f);
 
         m_menu.SetActive(false);
         m_game.SetActive(true);
@@ -107,6 +105,7 @@ public class UIController : MonoBehaviour
 
         gameObject.LeanDelayedCall(1f, () => CountDown(callback)).setRepeat(4);
     }
+
     public void SingleMode()
     {
         m_cameraUp.gameObject.SetActive(true);
@@ -149,6 +148,7 @@ public class UIController : MonoBehaviour
         m_over.SetActive(true);
         m_isPlaying = false;
     }
+
     public void ResetToMenu()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
